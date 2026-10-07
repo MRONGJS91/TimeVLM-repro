@@ -1,0 +1,45 @@
+{
+  "gpu_total_MB": 4295.0,
+  "results": [
+    {
+      "kind": "TimeVLM",
+      "pred_len": 720,
+      "batch_size": 1,
+      "fp16": false,
+      "grad_ckpt": false,
+      "forward_only": true,
+      "ok": true,
+      "peak_MB": 705.0
+    },
+    {
+      "kind": "TimeVLM",
+      "pred_len": 720,
+      "batch_size": 2,
+      "fp16": false,
+      "grad_ckpt": false,
+      "forward_only": true,
+      "ok": true,
+      "peak_MB": 712.7
+    },
+    {
+      "kind": "TimeVLM",
+      "pred_len": 720,
+      "batch_size": 4,
+      "fp16": false,
+      "grad_ckpt": false,
+      "forward_only": true,
+      "ok": true,
+      "peak_MB": 719.5
+    },
+    {
+      "kind": "TimeVLM",
+      "pred_len": 720,
+      "batch_size": 8,
+      "fp16": false,
+      "grad_ckpt": false,
+      "forward_only": true,
+      "ok": true,
+      "peak_MB": 749.3
+    }
+  ]
+}

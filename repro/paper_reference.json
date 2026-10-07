@@ -1,0 +1,23 @@
+{
+  "_note": "论文 ICML 2025 (arXiv:2502.04395) Table 16 (附录 B.4 完整长期预测) 的 ETTh1 逐 horizon MSE/MAE，从官方 PDF 586_Time_VLM_Exploring_Multimo.pdf 提取。Avg 行与主文 Table 2 聚合一致。",
+  "ETTh1": {
+    "TimeVLM": {
+      "96":  {"mse": 0.361, "mae": 0.386},
+      "192": {"mse": 0.397, "mae": 0.415},
+      "336": {"mse": 0.420, "mae": 0.421},
+      "720": {"mse": 0.441, "mae": 0.458},
+      "avg": {"mse": 0.405, "mae": 0.420}
+    },
+    "PatchTST": {
+      "96":  {"mse": 0.370, "mae": 0.399},
+      "192": {"mse": 0.413, "mae": 0.421},
+      "336": {"mse": 0.422, "mae": 0.436},
+      "720": {"mse": 0.447, "mae": 0.466},
+      "avg": {"mse": 0.413, "mae": 0.430}
+    }
+  },
+  "_caveats": [
+    "论文数据集统计表写 ETTh1 划分为 (8545, 2881, 2881)，而仓库代码为 12/4/4 月即 (8640, 2880, 2880) 原始行，存在细微不一致，可能导致小幅度指标差异。",
+    "本仓库 PatchTST 是简化版（无 individual head/decomposition/subtract_last），其指标不会与论文原 PatchTST 完全一致，应视为仓库自有基线。"
+  ]
+}

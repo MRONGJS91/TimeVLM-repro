@@ -1,0 +1,180 @@
+# ============================================================
+# Time-VLM 复现 —— 实验配置（供 RTX5090 32GB 训练使用）
+# 数据集：ETTh1  ./dataset/ETTh1.csv  (MD5=8381763947c85f4be6ac456c508460d6)
+# 随机种子：2024（run.py 硬编码 fix_seed=2024）
+# 注意：--gpu 0（单卡 RTX5090）；若多卡请改 run_5090.sh 的 GPU 分配
+# ============================================================
+
+# ---- 公共超参（Time-VLM，来自 scripts/TimeVLM_long_1.0p.sh + run.py 默认）----
+common_timevlm: &tvlm
+  task_name: long_term_forecast
+  is_training: 1
+  root_path: ./dataset/
+  data_path: ETTh1.csv
+  model: TimeVLM
+  data: ETTh1
+  features: M            # 多变量->多变量，7 通道
+  seq_len: 512
+  label_len: 48
+  enc_in: 7
+  dec_in: 7
+  c_out: 7
+  e_layers: 2            # 注：TimeVLM 不使用 encoder layers（死参数）
+  d_layers: 1            # 注：TimeVLM 不使用 decoder（死参数）
+  factor: 3              # 注：TimeVLM 不使用
+  n_heads: 8             # 注：TimeVLM 内部 cross/memory attention 硬编码 heads=4
+  d_ff: 768              # 注：TimeVLM 不使用
+  itr: 1
+  gpu: 0
+  use_amp: true
+  train_epochs: 15
+  batch_size: 32
+  learning_rate: 0.001
+  num_workers: 32
+  patience: 5
+  lradj: type1           # 每 epoch 学习率减半
+  des: Exp
+  image_size: 56
+  norm_const: 0.4
+  periodicity: 24
+  three_channel_image: true
+  finetune_vlm: false
+  learnable_image: true
+  vlm_type: clip         # openai/clip-vit-base-patch32
+  patch_len: 16
+  stride: 8
+  padding: 8
+  top_k: 5
+  patch_memory_size: 100
+  percent: 1.0           # full-shot
+
+common_patchtst: &ptst
+  task_name: long_term_forecast
+  is_training: 1
+  root_path: ./dataset/
+  data_path: ETTh1.csv
+  model: PatchTST
+  data: ETTh1
+  features: M
+  seq_len: 512
+  label_len: 48
+  enc_in: 7
+  dec_in: 7
+  c_out: 7
+  d_model: 128
+  d_ff: 768
+  n_heads: 8
+  e_layers: 2
+  dropout: 0.1
+  activation: gelu
+  factor: 3
+  itr: 1
+  gpu: 0
+  use_amp: true
+  train_epochs: 15
+  batch_size: 32
+  learning_rate: 0.001
+  num_workers: 32
+  patience: 5
+  lradj: type1
+  des: Exp
+  patch_len: 16
+  stride: 8
+  percent: 1.0
+
+experiments:
+  # ① Time-VLM full, horizon=96
+  - id: exp1_timevlm_full_h96
+    name: "Time-VLM full (h=96)"
+    <<: *tvlm
+    model_id: ETTh1_512_96
+    pred_len: 96
+    d_model: 32
+    use_mem_gate: false
+    dropout: 0.1
+    command: >
+      python -u run.py --task_name long_term_forecast --is_training 1
+      --root_path ./dataset/ --data_path ETTh1.csv --model_id ETTh1_512_96
+      --model TimeVLM --data ETTh1 --features M --seq_len 512 --label_len 48
+      --pred_len 96 --d_model 32 --e_layers 2 --d_layers 1 --factor 3
+      --enc_in 7 --dec_in 7 --c_out 7 --des Exp --itr 1 --gpu 0 --use_amp
+      --train_epochs 15 --image_size 56 --norm_const 0.4 --periodicity 24
+      --three_channel_image True --finetune_vlm False --batch_size 32
+      --learning_rate 0.001 --num_workers 32 --vlm_type clip
+      --use_mem_gate False --dropout 0.1 --percent 1.0
+
+  # ② Time-VLM full, horizon=720
+  - id: exp2_timevlm_full_h720
+    name: "Time-VLM full (h=720)"
+    <<: *tvlm
+    model_id: ETTh1_512_720
+    pred_len: 720
+    d_model: 256
+    use_mem_gate: true
+    dropout: 0.3
+    command: >
+      python -u run.py --task_name long_term_forecast --is_training 1
+      --root_path ./dataset/ --data_path ETTh1.csv --model_id ETTh1_512_720
+      --model TimeVLM --data ETTh1 --features M --seq_len 512 --label_len 48
+      --pred_len 720 --d_model 256 --e_layers 2 --d_layers 1 --factor 3
+      --enc_in 7 --dec_in 7 --c_out 7 --des Exp --itr 1 --gpu 0 --use_amp
+      --train_epochs 15 --image_size 56 --norm_const 0.4 --periodicity 24
+      --three_channel_image True --finetune_vlm False --batch_size 32
+      --learning_rate 0.001 --num_workers 32 --vlm_type clip
+      --use_mem_gate True --dropout 0.3 --percent 1.0
+
+  # ③ Time-VLM w/o VLM (消融), horizon=720
+  - id: exp3_timevlm_wovlm_h720
+    name: "Time-VLM w/o VLM ablation (h=720)"
+    <<: *tvlm
+    model_id: ETTh1_512_720_wovlm
+    pred_len: 720
+    d_model: 256
+    use_mem_gate: true
+    dropout: 0.3
+    w_out_visual: true     # 消融：去掉视觉分支（需先打补丁接入 forward，见 patch_w_out_vlm.py）
+    w_out_text: true       # 消融：去掉文本分支
+    command: >
+      python -u run.py --task_name long_term_forecast --is_training 1
+      --root_path ./dataset/ --data_path ETTh1.csv --model_id ETTh1_512_720_wovlm
+      --model TimeVLM --data ETTh1 --features M --seq_len 512 --label_len 48
+      --pred_len 720 --d_model 256 --e_layers 2 --d_layers 1 --factor 3
+      --enc_in 7 --dec_in 7 --c_out 7 --des Exp --itr 1 --gpu 0 --use_amp
+      --train_epochs 15 --image_size 56 --norm_const 0.4 --periodicity 24
+      --three_channel_image True --finetune_vlm False --batch_size 32
+      --learning_rate 0.001 --num_workers 32 --vlm_type clip
+      --use_mem_gate True --dropout 0.3 --percent 1.0
+      --w_out_visual True --w_out_text True
+    note: >
+      消融实现方式：仓库中的 w_out_visual / w_out_text 为死参数（未接入 forward）。
+      需先执行 `python repro/patch_w_out_vlm.py`，在 src/TimeVLM/model.py 的 forward()
+      中接入这两个开关（将 vision/text 嵌入置零），从而等价于"去掉 VLM"。
+
+  # ④ PatchTST baseline, horizon=96 / 720
+  - id: exp4a_patchtst_h96
+    name: "PatchTST baseline (h=96)"
+    <<: *ptst
+    model_id: ETTh1_512_96
+    pred_len: 96
+    command: >
+      python -u run.py --task_name long_term_forecast --is_training 1
+      --root_path ./dataset/ --data_path ETTh1.csv --model_id ETTh1_512_96
+      --model PatchTST --data ETTh1 --features M --seq_len 512 --label_len 48
+      --pred_len 96 --d_model 128 --n_heads 8 --e_layers 2 --d_ff 768
+      --dropout 0.1 --activation gelu --factor 3 --enc_in 7 --dec_in 7 --c_out 7
+      --des Exp --itr 1 --gpu 0 --use_amp --train_epochs 15 --batch_size 32
+      --learning_rate 0.001 --num_workers 32 --percent 1.0
+
+  - id: exp4b_patchtst_h720
+    name: "PatchTST baseline (h=720)"
+    <<: *ptst
+    model_id: ETTh1_512_720
+    pred_len: 720
+    command: >
+      python -u run.py --task_name long_term_forecast --is_training 1
+      --root_path ./dataset/ --data_path ETTh1.csv --model_id ETTh1_512_720
+      --model PatchTST --data ETTh1 --features M --seq_len 512 --label_len 48
+      --pred_len 720 --d_model 128 --n_heads 8 --e_layers 2 --d_ff 768
+      --dropout 0.1 --activation gelu --factor 3 --enc_in 7 --dec_in 7 --c_out 7
+      --des Exp --itr 1 --gpu 0 --use_amp --train_epochs 15 --batch_size 32
+      --learning_rate 0.001 --num_workers 32 --percent 1.0
