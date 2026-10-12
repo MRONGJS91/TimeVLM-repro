@@ -143,8 +143,21 @@ class VLMManager:
             raise e
 
     def _process_clip_inputs(self, B, images, prompts):
-        encoding = self.processor(images=images, text=prompts, return_tensors="pt").to(self.device)
-        outputs = self.model(**encoding, output_hidden_states=True)
+        # E1 ablation fix: fully differentiable image path. The CLIPProcessor
+        # detaches the graph (numpy/PIL round-trips), so do CLIP's image
+        # preprocessing in pure torch: bicubic resize 56->224 then mean/std
+        # normalization (identical math to the processor's resize+rescale+normalize).
+        import torch.nn.functional as F
+        images = F.interpolate(images, size=(224, 224), mode="bicubic", align_corners=False)
+        mean = torch.tensor([0.48145466, 0.4578275, 0.40821073], device=images.device).view(1, 3, 1, 1)
+        std = torch.tensor([0.26862954, 0.26130258, 0.27577711], device=images.device).view(1, 3, 1, 1)
+        pixel_values = (images - mean) / std
+        # Text side keeps using the processor's tokenizer (no grads needed).
+        text_inputs = self.processor(text=prompts, return_tensors="pt").to(self.device)
+        outputs = self.model(pixel_values=pixel_values.to(self.device),
+                             input_ids=text_inputs["input_ids"],
+                             attention_mask=text_inputs["attention_mask"],
+                             output_hidden_states=True)
         text_features = outputs.text_embeds  # Shape: [B, hidden_size]
         image_features = outputs.image_embeds  # Shape: [B, hidden_size]
         return image_features, text_features  # Both shape: [B, hidden_size]

@@ -403,9 +403,10 @@ class Model(nn.Module):
         scale = (max_vals - min_vals).clamp(min=epsilon)
         # Normalize to [0, 1]
         images = (images - min_vals) / scale
-        # Scale to [0, 255] and clamp to ensure valid range
-        images = (images * 255).clamp(0, 255).to(torch.uint8)
-        
+        # E1 ablation fix: keep float32 in [0,1] (no uint8 cast) so gradients flow
+        # to the learnable image module; vlm_manager passes do_rescale=False.
+        images = images.clamp(0, 1)
+
         return images
 
     @torch.no_grad()
