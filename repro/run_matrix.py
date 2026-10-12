@@ -141,10 +141,11 @@ def build_tasks():
     for dset in order:
         for few in [False, True]:
             for mf in models:
+                mname = mf.__name__.replace("_args", "")
                 for h in HORIZONS:
                     a = mf(dset, h, few)
-                    tasks.append(dict(name=f"full_{a['model_id']}" if not few else f"few_{a['model_id']}",
-                                      model=mf.__name__.replace("_args", ""),
+                    tasks.append(dict(name=f"{'few' if few else 'full'}_{mname}_{a['model_id']}",
+                                      model=mname,
                                       dataset=dset, horizon=h,
                                       setting="few" if few else "full",
                                       args=a, timeout=6 * 3600))
@@ -154,14 +155,15 @@ def build_tasks():
                             ("TimeLLM", "ETTm1", "ETTm2"), ("TimeLLM", "ETTm2", "ETTm1")]:
         for h in HORIZONS:
             a = zero_args(model, src, tgt, h)
-            tasks.append(dict(name=f"zero_{a['model_id']}", model=model,
+            tasks.append(dict(name=f"zero_{model}_{a['model_id']}", model=model,
                               dataset=f"{src}->{tgt}", horizon=h,
                               setting="zero", args=a, timeout=6 * 3600))
     # ECL 精简组（队尾）：TimeVLM + 3 基线，仅 full h96/h720
     for mf in [tvlm_args, patchtst_args, itrans_args, timellm_args]:
+        mname = mf.__name__.replace("_args", "")
         for h in [96, 720]:
             a = mf("ECL", h, few=False)
-            tasks.append(dict(name=f"ecl_full_{a['model_id']}", model=mf.__name__.replace("_args", ""),
+            tasks.append(dict(name=f"ecl_full_{mname}_{a['model_id']}", model=mname,
                               dataset="ECL", horizon=h, setting="full",
                               args=a, timeout=10 * 3600))
     return tasks
@@ -175,9 +177,16 @@ def load_done():
     return set(re.findall(r"^\S+", text, re.M))
 
 
+STORE_TRUE_ARGS = {"use_amp"}  # argparse action='store_true'，不能带值
+
+
 def cmd_of(a):
     parts = [PY, "-u", "run.py"]
     for k, v in a.items():
+        if k in STORE_TRUE_ARGS:
+            if v:
+                parts.append(f"--{k}")
+            continue
         if isinstance(v, bool):
             parts += [f"--{k}", "True" if v else "False"]
         else:
@@ -207,7 +216,8 @@ def run_task(t, logfile):
                     if first_val > DIVERGE:
                         proc.send_signal(signal.SIGKILL)
                         killed = True
-            if re.search(r"nan|inf", text, re.I) and "Vali Loss" in text:
+            # 只检查 epoch 汇总行的 loss（早停的 "(inf --> X)" 消息是正常的）
+            if re.search(r"(Train|Vali|Test) Loss:\s*(nan|inf)", text, re.I):
                 proc.send_signal(signal.SIGKILL)
                 killed = True
         rc = proc.returncode
