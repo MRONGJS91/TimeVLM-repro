@@ -40,6 +40,9 @@ class Model(nn.Module):
         """
         super().__init__()
         self.task_name = configs.task_name
+        # matrix compat: few/zero-shot 复用 long-term 前向与头部（数据采样由 data_provider 控制）
+        if self.task_name in ('few_shot_forecast', 'zero_shot_forecast'):
+            self.task_name = 'long_term_forecast'
         self.seq_len = configs.seq_len
         self.pred_len = configs.pred_len
         padding = stride
