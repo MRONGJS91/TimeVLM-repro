@@ -26,7 +26,7 @@ PY = sys.executable
 RESULT = os.path.join(REPO, "result_long_term_forecast.txt")
 LOGDIR = os.path.join(REPO, "logs", "matrix")
 MANIFEST = os.path.join(REPO, "repro", "matrix_manifest.json")
-DIVERGE = 3.0  # 归一化空间首 epoch Vali 阈值（NaN/Inf 单独判）
+DIVERGE = 8.0  # 归一化空间首 epoch Vali 阈值（NaN/Inf 单独判；3.0 对 few/zero-shot 误杀过多）
 
 COMMON = dict(is_training=1,
               root_path="./dataset/", features="M", seq_len=512, label_len=48,
@@ -163,6 +163,8 @@ def build_tasks():
         mname = mf.__name__.replace("_args", "")
         for h in [96, 720]:
             a = mf("ECL", h, few=False)
+            if mname == "timellm":
+                a["batch_size"] = 8  # 321 通道 × batch32 时 reprog 注意力 21GB OOM
             tasks.append(dict(name=f"ecl_full_{mname}_{a['model_id']}", model=mname,
                               dataset="ECL", horizon=h, setting="full",
                               args=a, timeout=10 * 3600))
@@ -223,7 +225,7 @@ def run_task(t, logfile):
         rc = proc.returncode
         with open(logfile, errors="ignore") as f:
             text = f.read()
-    done = "mse:" in text
+    done = "mse:" in text or "MSE:" in text  # zero-shot exp 用大写 MSE:
     status = "DIVERGED" if killed else ("DONE" if done and rc == 0 else "FAILED")
     return status, first_val, time.time() - t0
 
