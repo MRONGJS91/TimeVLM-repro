@@ -22,11 +22,12 @@ import matplotlib.pyplot as plt
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(REPO_ROOT)
 
-# 默认：label -> setting（对应 experiments.yaml 的 4 组，predict 通道取 OT=最后一列）
+# 默认：h96 对比（实际 setting 串见 result_long_term_forecast.txt；predict 通道取 OT=最后一列）
+# 注意：仓库 run.py 生成的 setting 中 TimeVLM 用 'clip'（小写）、PatchTST 用 'CLIP'（大写）。
 DEFAULT_SPEC = [
     {"label": "GroundTruth", "setting": None, "color": "black", "kind": "gt"},
     {"label": "Time-VLM", "setting": "long_term_forecast_clip_ETTh1_512_96_TimeVLM_ETTh1_ftM_sl512_ll48_pl96_dm32_fs1.0_0", "color": "tab:blue"},
-    {"label": "PatchTST", "setting": "long_term_forecast_clip_ETTh1_512_96_PatchTST_ETTh1_ftM_sl512_ll48_pl96_dm128_fs1.0_0", "color": "tab:orange"},
+    {"label": "PatchTST", "setting": "long_term_forecast_CLIP_ETTh1_512_96_PatchTST_ETTh1_ftM_sl512_ll48_pl96_dm128_fs1.0_0", "color": "tab:orange"},
 ]
 
 
@@ -51,8 +52,9 @@ def plot_curve(spec, channel=-1, sample_idx=0, out_dir="repro/figures"):
         pr = pred[sample_idx, :, channel]
         lines.append((entry["label"], entry.get("color", "tab:blue"), gt, pr))
 
-    # ground truth 用第一条非 gt 的 true
-    true0, _, _ = load_arrays(spec[0]["setting"])
+    # ground truth 用第一条非 gt 条目的 true（gt 条目 setting 为 None，不可 load）
+    first_model = next(e for e in spec if e.get("kind") != "gt")
+    true0, _, _ = load_arrays(first_model["setting"])
     gt = true0[sample_idx, :, channel]
 
     plt.figure(figsize=(10, 4.5))
@@ -74,10 +76,12 @@ def plot_curve(spec, channel=-1, sample_idx=0, out_dir="repro/figures"):
 def plot_metric_bar(spec, out_dir="repro/figures"):
     os.makedirs(out_dir, exist_ok=True)
     labels, mses, maes = [], [], []
+    pred_len = None
     for entry in spec:
         if entry.get("kind") == "gt":
             continue
-        _, _, metrics = load_arrays(entry["setting"])
+        true, pred, metrics = load_arrays(entry["setting"])
+        pred_len = pred.shape[1]
         # metrics.npy = [mae, mse, rmse, mape, mspe]
         labels.append(entry["label"])
         mses.append(metrics[1])
@@ -89,10 +93,10 @@ def plot_metric_bar(spec, out_dir="repro/figures"):
     plt.bar(x + w / 2, maes, w, label="MAE")
     plt.xticks(x, labels, rotation=20)
     plt.ylabel("error (normalized)")
-    plt.title("ETTh1 test MSE / MAE")
+    plt.title(f"ETTh1 test MSE / MAE (pred_len={pred_len})")
     plt.legend()
     plt.tight_layout()
-    out = os.path.join(out_dir, "metrics_bar.png")
+    out = os.path.join(out_dir, f"metrics_bar_predlen{pred_len}.png")
     plt.savefig(out, dpi=200)
     plt.close()
     print("[saved]", out)

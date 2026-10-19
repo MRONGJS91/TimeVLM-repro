@@ -75,6 +75,8 @@ def build_tables(rows, reference=None):
     for r in sorted(rows, key=lambda x: (x["setting"])):
         info = parse_setting(r["setting"])
         model = info.get("model", "?")
+        if info.get("ablation"):
+            model += " (w/o VLM)"
         pl = info.get("pred_len", "?")
         dm = info.get("d_model", "?")
         md_lines.append(f"| {model} | {pl} | {dm} | {r['mse']:.4f} | {r['mae']:.4f} |")

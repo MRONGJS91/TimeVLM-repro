@@ -1,0 +1,6 @@
+[
+  {"label": "GroundTruth", "setting": null, "color": "black", "kind": "gt"},
+  {"label": "Time-VLM full", "setting": "long_term_forecast_clip_ETTh1_512_720_TimeVLM_ETTh1_ftM_sl512_ll48_pl720_dm256_fs1.0_0", "color": "tab:blue"},
+  {"label": "Time-VLM w/o VLM", "setting": "long_term_forecast_clip_ETTh1_512_720_wovlm_TimeVLM_ETTh1_ftM_sl512_ll48_pl720_dm256_fs1.0_0", "color": "tab:green"},
+  {"label": "PatchTST", "setting": "long_term_forecast_CLIP_ETTh1_512_720_PatchTST_ETTh1_ftM_sl512_ll48_pl720_dm128_fs1.0_0", "color": "tab:orange"}
+]

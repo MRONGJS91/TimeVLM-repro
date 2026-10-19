@@ -164,7 +164,10 @@ def build_tasks():
         for h in [96, 720]:
             a = mf("ECL", h, few=False)
             if mname == "timellm":
-                a["batch_size"] = 8  # 321 通道 × batch32 时 reprog 注意力 21GB OOM
+                # 321 通道：TSL 官方 Time-LLM ECL 惯例 seq96；B*N 展平下 seq512+batch32 OOM
+                a["seq_len"] = 96
+                a["batch_size"] = 16
+                a["model_id"] = f"ECL_96_{h}"
             tasks.append(dict(name=f"ecl_full_{mname}_{a['model_id']}", model=mname,
                               dataset="ECL", horizon=h, setting="full",
                               args=a, timeout=10 * 3600))

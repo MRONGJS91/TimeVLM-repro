@@ -2,11 +2,11 @@
   {
     "type": "device",
     "cuda": true,
-    "name": "NVIDIA GeForce RTX 3050 Laptop GPU",
-    "total_memory_MB": 4294.5,
-    "cuda_capability": "8.6",
-    "torch": "2.2.2+cu118",
-    "cuda_runtime": "11.8"
+    "name": "NVIDIA GeForce RTX 5090",
+    "total_memory_MB": 33635.4,
+    "cuda_capability": "12.0",
+    "torch": "2.7.1+cu128",
+    "cuda_runtime": "12.8"
   },
   {
     "model": "TimeVLM",
@@ -14,7 +14,7 @@
     "d_model": 32,
     "use_mem_gate": false,
     "dropout": 0.1,
-    "with_grad": false,
+    "with_grad": true,
     "stage_import": "ok",
     "stage_init": "ok",
     "params_total": 151637879,
@@ -39,112 +39,9 @@
     "stage_forward": "ok",
     "mem": {
       "tag": "post-forward",
-      "allocated_MB": 617.9,
-      "peak_MB": 622.5,
-      "reserved_MB": 666.9
-    },
-    "status": "PASS"
-  },
-  {
-    "model": "TimeVLM",
-    "pred_len": 720,
-    "d_model": 256,
-    "use_mem_gate": true,
-    "dropout": 0.3,
-    "with_grad": false,
-    "stage_import": "ok",
-    "stage_init": "ok",
-    "params_total": 170731801,
-    "params_trainable": 19454488,
-    "input_shape": [
-      1,
-      512,
-      7
-    ],
-    "output_shape": [
-      1,
-      720,
-      7
-    ],
-    "expected_shape": [
-      1,
-      720,
-      7
-    ],
-    "dim_match": true,
-    "output_finite": true,
-    "stage_forward": "ok",
-    "mem": {
-      "tag": "post-forward",
-      "allocated_MB": 702.9,
-      "peak_MB": 708.0,
-      "reserved_MB": 757.1
-    },
-    "status": "PASS"
-  },
-  {
-    "model": "PatchTST",
-    "pred_len": 96,
-    "with_grad": false,
-    "stage_import": "ok",
-    "stage_init": "ok",
-    "params_total": 1316960,
-    "input_shape": [
-      1,
-      512,
-      7
-    ],
-    "output_shape": [
-      1,
-      96,
-      7
-    ],
-    "expected_shape": [
-      1,
-      96,
-      7
-    ],
-    "dim_match": true,
-    "output_finite": true,
-    "stage_forward": "ok",
-    "mem": {
-      "tag": "post-forward",
-      "allocated_MB": 16.8,
-      "peak_MB": 153.6,
-      "reserved_MB": 887.1
-    },
-    "status": "PASS"
-  },
-  {
-    "model": "PatchTST",
-    "pred_len": 720,
-    "with_grad": false,
-    "stage_import": "ok",
-    "stage_init": "ok",
-    "params_total": 6429392,
-    "input_shape": [
-      1,
-      512,
-      7
-    ],
-    "output_shape": [
-      1,
-      720,
-      7
-    ],
-    "expected_shape": [
-      1,
-      720,
-      7
-    ],
-    "dim_match": true,
-    "output_finite": true,
-    "stage_forward": "ok",
-    "mem": {
-      "tag": "post-forward",
-      "allocated_MB": 37.3,
-      "peak_MB": 174.2,
-      "reserved_MB": 188.7
+      "allocated_MB": 618.8,
+      "peak_MB": 623.7,
+      "reserved_MB": 669.0
     },
     "status": "PASS"
   }
